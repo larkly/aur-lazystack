@@ -13,7 +13,7 @@ sha256sums=('SKIP')
 build() {
     cd "${pkgname}-${pkgver}/src"
     export CGO_ENABLED=0
-    go build -ldflags "-s -w -X main.version=v${pkgver}" -o "${pkgname}" ./cmd/lazystack
+    go build -ldflags "-s -w -X main.version=v${pkgver} -X main.disableUpdateCheck=true" -o "${pkgname}" ./cmd/lazystack
 }
 
 package() {
