@@ -1,0 +1,46 @@
+name: Update PKGBUILD
+
+on:
+  repository_dispatch:
+    types: [update-pkgbuild]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update PKGBUILD
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          SHA256: ${{ github.event.client_payload.sha256_source }}
+        run: |
+          pkgver="${VERSION#v}"
+          sed -i "s/^pkgver=.*/pkgver=${pkgver}/" PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${SHA256}')/" PKGBUILD
+
+      - name: Generate .SRCINFO
+        uses: hapakaien/archlinux-package-action@v2
+        with:
+          flags: ""
+          namcap: false
+          srcinfo: true
+
+      - name: Commit and push to GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to ${VERSION}"
+          git push
+
+      - name: Push to AUR
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$AUR_SSH_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          echo -e "Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur\n  User aur\n  StrictHostKeyChecking accept-new" > ~/.ssh/config
+          git remote add aur ssh://aur@aur.archlinux.org/lazystack.git
+          git push aur main:master
