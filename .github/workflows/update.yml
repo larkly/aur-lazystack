@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  VERSION: ${{ github.event.client_payload.version }}
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -17,7 +20,6 @@ jobs:
 
       - name: Update PKGBUILD
         env:
-          VERSION: ${{ github.event.client_payload.version }}
           SHA256: ${{ github.event.client_payload.sha256_source }}
         run: |
           pkgver="${VERSION#v}"
@@ -46,9 +48,15 @@ jobs:
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$AUR_SSH_KEY" > ~/.ssh/aur
+          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
           chmod 600 ~/.ssh/aur
-          echo -e "Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur\n  User aur\n  StrictHostKeyChecking accept-new" > ~/.ssh/config
+          cat > ~/.ssh/config <<'EOF'
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+            StrictHostKeyChecking accept-new
+          EOF
+          ssh -T aur@aur.archlinux.org -v 2>&1 | head -50 || true
           git remote add aur ssh://aur@aur.archlinux.org/lazystack.git
           git fetch aur master
           git checkout aur/master
