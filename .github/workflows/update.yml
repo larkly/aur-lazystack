@@ -46,4 +46,4 @@ jobs:
           chmod 600 ~/.ssh/aur
           echo -e "Host aur.archlinux.org\n  IdentityFile ~/.ssh/aur\n  User aur\n  StrictHostKeyChecking accept-new" > ~/.ssh/config
           git remote add aur ssh://aur@aur.archlinux.org/lazystack.git
-          git push aur main:master
+          git push --force aur main:master
